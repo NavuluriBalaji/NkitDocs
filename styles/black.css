@@ -1,0 +1,56 @@
+/* True black theme overrides for Material */
+:root {
+  /* Base colors */
+  --md-default-bg-color: #000000;
+  --md-default-fg-color: #e6e6e6;
+  --md-default-fg-color--light: #bfbfbf;
+  --md-default-fg-color--lighter: #9e9e9e;
+
+  /* Primary/accent kept neutral */
+  --md-primary-fg-color: #222222;
+  --md-primary-fg-color--light: #2a2a2a;
+  --md-primary-fg-color--dark: #1a1a1a;
+  --md-accent-fg-color: #444444;
+
+  /* Code blocks */
+  --md-code-bg-color: #0a0a0a;
+  --md-code-fg-color: #e0e0e0;
+}
+
+/* Ensure page background is true black */
+.md-grid, .md-content, .md-sidebar, .md-main, .md-header, .md-footer, .md-tabs {
+  background-color: #000000 !important;
+}
+
+/* Improve link contrast */
+.md-typeset a {
+  color: #7aa2f7;
+}
+.md-typeset a:hover {
+  color: #a6c1ff;
+}
+
+/* Muted borders for dividers */
+.md-typeset hr, .md-sidebar__scrollwrap, .md-content__inner {
+  border-color: #222222 !important;
+}
+
+/* Tables */
+.md-typeset table:not([class]) {
+  background: #0b0b0b;
+}
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+  border-color: #1e1e1e;
+}
+
+/* Admonitions */
+.md-typeset .admonition, .md-typeset details {
+  background: #0c0c0c;
+  border-color: #1f1f1f;
+}
+
+/* Search dialog */
+.md-search__inner, .md-search-result {
+  background: #000000;
+}

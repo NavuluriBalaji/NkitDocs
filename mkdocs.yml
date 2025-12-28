@@ -1,0 +1,99 @@
+site_name: nkit Documentation
+site_description: Professional AI Agent Framework for Multi-Agent Systems
+site_author: nkit Contributors
+site_url: https://nkit-docs.vercel.app
+
+repo_url: https://github.com/yourusername/nkit
+repo_name: nkit
+edit_uri: edit/main/docs/docs/
+
+theme:
+    name: material
+    palette:
+        scheme: slate
+        primary: grey
+        accent: grey
+    features:
+        - navigation.instant
+        - navigation.tracking
+        - navigation.tabs
+        - navigation.sections
+        - navigation.top
+        - toc.follow
+        - search.suggest
+        - search.highlight
+
+extra_css:
+    - styles/black.css
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      use_pygments: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist
+  - admonition
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quick-start.md
+      - Your First Agent: getting-started/first-agent.md
+  - Core Concepts:
+      - Architecture: core-concepts/architecture.md
+      - Agents: core-concepts/agents.md
+      - Tools: core-concepts/tools.md
+      - Memory: core-concepts/memory.md
+      - Tasks: core-concepts/tasks.md
+      - Crews: core-concepts/crews.md
+  - API Reference:
+      - Agent:
+          - Agent Class: api-reference/agent/agent.md
+          - Step: api-reference/agent/step.md
+      - Tasks:
+          - Task: api-reference/tasks/task.md
+          - TaskManager: api-reference/tasks/task-manager.md
+      - Crews:
+          - Crew: api-reference/crews/crew.md
+          - Process Types: api-reference/crews/process.md
+      - LLMs:
+          - LLM Adapters: api-reference/llms/adapters.md
+      - Knowledge Base:
+          - Knowledge Base: api-reference/knowledge/knowledge-base.md
+          - Embeddings: api-reference/knowledge/embeddings.md
+      - Events:
+          - Event Bus: api-reference/events/event-bus.md
+      - Hooks:
+          - Hook Manager: api-reference/hooks/hook-manager.md
+      - Telemetry:
+          - Metrics: api-reference/telemetry/metrics.md
+          - Tracing: api-reference/telemetry/tracing.md
+  - Examples:
+      - Basic Agent: examples/basic-agent.md
+      - Multi-Agent Crew: examples/crew.md
+      - Task Management: examples/tasks.md
+      - RAG System: examples/rag.md
+      - Event Integration: examples/events.md
+  - Advanced:
+      - Custom Tools: advanced/custom-tools.md
+      - Custom Memory: advanced/custom-memory.md
+      - Custom LLM Provider: advanced/custom-llm.md
+      - Monitoring: advanced/monitoring.md
+      - Best Practices: advanced/best-practices.md
+  - Migration Guide: MIGRATION_GUIDE.md
+  - FAQ: faq.md
