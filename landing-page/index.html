@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NKit - Autonomous Execution</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#0A0A0A',
+                        surface: '#141414',
+                        text: '#F5F5F5',
+                        muted: '#878787',
+                        stroke: '#1F1F1F'
+                    },
+                    fontFamily: {
+                        body: ['Inter', 'sans-serif'],
+                        display: ['Instrument Serif', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:italic&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        body {
+            background-color: #0A0A0A;
+            color: #F5F5F5;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .accent-gradient {
+            background: linear-gradient(90deg, #89AACC 0%, #4E85BF 100%);
+        }
+
+        /* Hero Glare/Overlay */
+        .hero-gradient {
+            background: radial-gradient(circle at 50% -20%, rgba(137, 170, 204, 0.15) 0%, rgba(10, 10, 10, 0) 50%);
+        }
+
+        .nav-pill {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-gradient-border {
+            position: relative;
+            background: #0A0A0A;
+            background-clip: padding-box;
+            border: 1px solid transparent;
+        }
+        .btn-gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            z-index: -1;
+            margin: -1px;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #89AACC 0%, #4E85BF 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .btn-gradient-border:hover::before {
+            opacity: 1;
+        }
+
+        /* Bento Hover */
+        .bento-card {
+            background: #141414;
+            border: 1px solid #1F1F1F;
+            border-radius: 24px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+        .bento-card:hover {
+            border-color: #4E85BF;
+            transform: translateY(-4px);
+        }
+
+        .rotate-word {
+            display: inline-block;
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Loading Screen Overlay -->
+    <div id="loader" class="fixed inset-0 z-[9999] bg-bg flex flex-col justify-between p-8">
+        <div class="loader-label text-xs text-muted uppercase tracking-[0.3em] opacity-0 translate-y-[-20px]">NKit Engine</div>
+        <div class="flex items-center justify-center flex-1">
+            <h1 id="loader-word" class="text-4xl md:text-7xl font-display italic text-text opacity-0">Initialize</h1>
+        </div>
+        <div>
+            <div class="flex justify-end mb-4">
+                <span id="loader-count" class="text-6xl md:text-9xl font-display tabular-nums">000</span>
+            </div>
+            <div class="h-[3px] bg-stroke/50 w-full overflow-hidden">
+                <div id="loader-progress" class="h-full w-full accent-gradient origin-left scale-x-0 shadow-[0_0_8px_rgba(137,170,204,0.35)]"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 flex justify-center pt-6 px-4 pb-4 transition-all duration-300">
+        <div class="nav-pill inline-flex items-center rounded-full px-2 py-2">
+            <div class="w-9 h-9 rounded-full bg-bg border border-stroke flex items-center justify-center font-display italic text-[14px]">NK</div>
+            <div class="w-px h-5 bg-stroke mx-3 hidden sm:block"></div>
+            <div class="hidden sm:flex items-center gap-1">
+                <a href="#" class="text-sm px-4 py-1.5 rounded-full text-text bg-stroke/50">Engine</a>
+                <a href="#" class="text-sm px-4 py-1.5 rounded-full text-muted hover:text-text hover:bg-stroke/50 transition-colors">Agents</a>
+                <a href="#" class="text-sm px-4 py-1.5 rounded-full text-muted hover:text-text hover:bg-stroke/50 transition-colors">Docs</a>
+            </div>
+            <div class="w-px h-5 bg-stroke mx-3 hidden sm:block"></div>
+            <a href="#" class="btn-gradient-border text-sm px-4 py-1.5 rounded-full flex items-center gap-2">Deploy <span class="text-xl leading-none font-display">↗</span></a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="relative min-h-screen flex flex-col items-center justify-center hero-gradient px-4 pt-24 overflow-hidden">
+        <div class="z-10 text-center max-w-4xl mx-auto flex flex-col items-center">
+            <div class="hero-item text-xs text-muted uppercase tracking-[0.3em] mb-8">NKit Framework '26</div>
+            <h1 class="hero-item text-6xl md:text-8xl lg:text-9xl font-display italic leading-[0.9] tracking-tight mb-6">Autonomous systems</h1>
+            
+            <div class="hero-item text-2xl md:text-4xl text-muted font-light mb-12">
+                Building <span id="role-text" class="text-text rotate-word">intelligence</span> for modern teams.
+            </div>
+            
+            <p class="hero-item text-sm md:text-base text-muted max-w-md mx-auto mb-12 leading-relaxed">
+                Designing seamless autonomous agent networks by focusing on the unique nuances which bring Python logic and API sandboxes to life.
+            </p>
+            
+            <div class="hero-item flex items-center gap-4">
+                <a href="#" class="bg-text text-bg px-8 py-3.5 rounded-full text-sm font-medium hover:scale-105 transition-transform duration-300">View Sandbox</a>
+                <a href="#" class="btn-gradient-border px-8 py-3.5 border-2 border-stroke rounded-full text-sm font-medium hover:scale-105 transition-transform duration-300">Read Docs</a>
+            </div>
+        </div>
+
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 opacity-50">
+            <span class="text-[10px] text-muted uppercase tracking-[0.2em]">Scroll</span>
+            <div class="w-px h-12 bg-stroke overflow-hidden relative">
+                <div class="absolute inset-0 bg-text bg-gradient-to-b from-transparent via-text to-transparent -translate-y-full" id="scroll-indicator"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Selected Works / Bento Grid -->
+    <section class="py-24 px-6 md:px-12 max-w-[1400px] mx-auto hidden-section">
+        <div class="flex items-end justify-between mb-16">
+            <div>
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-8 h-px bg-stroke"></div>
+                    <span class="text-xs text-muted uppercase tracking-[0.3em]">CodeACT Module</span>
+                </div>
+                <h2 class="text-4xl md:text-5xl">Dynamic <span class="font-display italic text-text">playgrounds</span></h2>
+                <p class="text-muted mt-4 max-w-md">A selection of sandbox capabilities inside the NKit engine, executing directly on your machine.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <!-- Row 1 -->
+            <div class="bento-card col-span-1 md:col-span-7 h-[400px] relative group p-8 flex flex-col justify-end">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
+                <div class="relative z-20">
+                    <h3 class="font-display italic text-3xl mb-2">Web Analysis</h3>
+                    <p class="text-muted text-sm">Automated DuckDuckGo recursive scraping.</p>
+                </div>
+            </div>
+            <div class="bento-card col-span-1 md:col-span-5 h-[400px] relative group p-8 flex flex-col justify-end">
+                <div class="relative z-20">
+                    <h3 class="font-display italic text-3xl mb-2">SafetyGate</h3>
+                    <p class="text-muted text-sm">Pre-execution tool blocking.</p>
+                </div>
+            </div>
+            <!-- Row 2 -->
+            <div class="bento-card col-span-1 md:col-span-5 h-[400px] relative group p-8 flex flex-col justify-end">
+                <div class="relative z-20">
+                    <h3 class="font-display italic text-3xl mb-2">WhyLog</h3>
+                    <p class="text-muted text-sm">Tamper-proof JSONL audit trails.</p>
+                </div>
+            </div>
+            <div class="bento-card col-span-1 md:col-span-7 h-[400px] relative group p-8 flex flex-col justify-end">
+                <div class="relative z-20">
+                    <h3 class="font-display italic text-3xl mb-2">Local Providers</h3>
+                    <p class="text-muted text-sm">Native execution via LM Studio and Ollama.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Documentation Architecture -->
+    <section class="py-24 px-6 md:px-12 max-w-[1400px] mx-auto hidden-section border-t border-stroke mt-12 bg-surface rounded-[40px] mb-24 cursor-default">
+        <div class="flex items-center gap-4 mb-16">
+            <div class="w-8 h-px bg-stroke"></div>
+            <span class="text-xs text-muted uppercase tracking-[0.3em]">NKit Architecture</span>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-12">
+            <!-- Left Sidebar Nav -->
+            <div class="w-full lg:w-1/4 flex flex-col gap-3">
+                <button onclick="switchTab('agents')" id="tab-agents" class="doc-tab-btn active text-left px-6 py-4 rounded-xl font-medium transition-all text-text bg-stroke/50 shadow-inner border border-stroke">Agents & ReAct</button>
+                <button onclick="switchTab('crews')" id="tab-crews" class="doc-tab-btn text-left px-6 py-4 rounded-xl font-medium transition-all text-muted border border-transparent hover:text-text hover:bg-stroke/20">Multi-Agent Crews</button>
+                <button onclick="switchTab('memory')" id="tab-memory" class="doc-tab-btn text-left px-6 py-4 rounded-xl font-medium transition-all text-muted border border-transparent hover:text-text hover:bg-stroke/20">Memory State</button>
+                <button onclick="switchTab('tools')" id="tab-tools" class="doc-tab-btn text-left px-6 py-4 rounded-xl font-medium transition-all text-muted border border-transparent hover:text-text hover:bg-stroke/20">Dynamic Tools</button>
+            </div>
+
+            <!-- Right Content Window -->
+            <div class="w-full lg:w-3/4 bg-[#080808] border border-stroke rounded-2xl p-8 md:p-12 relative overflow-hidden min-h-[600px] group">
+                <div class="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-blue-900/5 pointer-events-none"></div>
+                
+                <!-- Agents -->
+                <div id="content-agents" class="doc-panel active block animate-fade-in">
+                    <div class="mb-4 text-xs font-mono text-[#89AACC]">class nkit.agent.Agent</div>
+                    <h2 class="text-4xl md:text-5xl font-display italic text-text mb-6">The ReAct Engine</h2>
+                    <p class="text-muted leading-relaxed mb-8 max-w-2xl">
+                        NKit agents are autonomous solvers. Built on the ReAct (Reasoning and Acting) loop, they recursively execute <code>THINK -&gt; ACT -&gt; OBSERVE</code> logic chains. They automatically parse outputs, invoke Python sandbox tooling, and evaluate their own hallucinations against system invariants.
+                    </p>
+                    <div class="w-full bg-[#050505] border border-stroke rounded-xl p-6 font-mono text-sm overflow-x-auto text-[#D1D5DB]">
+                        <div class="text-muted mb-2"># Standard autonomous agent injection</div>
+                        <code>
+<span class="text-[#84A59D]">from</span> NKit <span class="text-[#84A59D]">import</span> Agent<br><br>
+agent = Agent(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;name=<span class="text-[#F2CC8F]">"SystemArchitect"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;model=<span class="text-[#F2CC8F]">"gpt-4-turbo"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;temperature=<span class="text-[#E07A5F]">0.2</span>, <span class="text-muted"># Analytical rigidity</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;max_iterations=<span class="text-[#E07A5F]">15</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enable_memory=<span class="text-[#84A59D]">True</span><br>
+)<br><br>
+<span class="text-[#84A59D]">await</span> agent.aprocess(task=<span class="text-[#F2CC8F]">"Re-write the microservice map."</span>)
+                        </code>
+                    </div>
+                </div>
+
+                <!-- Crews -->
+                <div id="content-crews" class="doc-panel hidden animate-fade-in">
+                    <div class="mb-4 text-xs font-mono text-[#89AACC]">class nkit.crews.Crew</div>
+                    <h2 class="text-4xl md:text-5xl font-display italic text-text mb-6">Multi-Agent Swarms</h2>
+                    <p class="text-muted leading-relaxed mb-8 max-w-2xl">
+                        Scale single instances into massive autonomous pipelines. NKit Crews orchestrate multiple specialized agents using execution strategies: <strong>Sequential Pipelines</strong>, <strong>Hierarchical Delegation</strong>, or <strong>Parallel Execution</strong>. All context is shared dynamically via the internal Memory Registry.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="p-4 border border-stroke rounded-xl bg-bg/50">
+                            <h4 class="text-text font-medium mb-1">Sequential</h4>
+                            <p class="text-xs text-muted">A -&gt; B -&gt; C execution.</p>
+                        </div>
+                        <div class="p-4 border border-stroke rounded-xl bg-bg/50">
+                            <h4 class="text-text font-medium mb-1">Hierarchical</h4>
+                            <p class="text-xs text-muted">Manager coordinates worker nodes.</p>
+                        </div>
+                        <div class="p-4 border border-stroke rounded-xl bg-bg/50">
+                            <h4 class="text-text font-medium mb-1">Parallel</h4>
+                            <p class="text-xs text-muted">Async concurrent tasks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory -->
+                <div id="content-memory" class="doc-panel hidden animate-fade-in">
+                    <div class="mb-4 text-xs font-mono text-[#89AACC]">module nkit.memory.*</div>
+                    <h2 class="text-4xl md:text-5xl font-display italic text-text mb-6">State Management</h2>
+                    <p class="text-muted leading-relaxed mb-8 max-w-2xl">
+                        Stateless execution is useless for production. Agents hook into ConversationMemory, VectorMemory, or generic FileMemory to cache entities. NKit prevents prompt bloat by automatically tracking token footprints and intelligently pruning deep history.
+                    </p>
+                    <ul class="space-y-4 text-sm text-text">
+                        <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-[#4E85BF]"></div> <strong>Conversation state </strong> keeps JSON tracks of every LLM interaction.</li>
+                        <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-[#4E85BF]"></div> <strong>Entity memory </strong> tracks isolated variables and metadata payloads.</li>
+                        <li class="flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-[#89AACC]"></div> <strong>Token Pruning </strong> forces cache invalidation using <code>agent.memory.prune()</code> once token limit hits peak density.</li>
+                    </ul>
+                </div>
+
+                <!-- Tools -->
+                <div id="content-tools" class="doc-panel hidden animate-fade-in">
+                    <div class="mb-4 text-xs font-mono text-[#89AACC]">class nkit.tools.Tool</div>
+                    <h2 class="text-4xl md:text-5xl font-display italic text-text mb-6">Capability Hooks</h2>
+                    <p class="text-muted leading-relaxed mb-8 max-w-2xl">
+                        Native zero-barrier extensions. NKit converts raw Python functions securely into strict JSON schemas formatted appropriately for any registered LLM backend. If the schema validation fails, the native CodeACT loop corrects the malformed payload without crashing securely.
+                    </p>
+                    <div class="w-full bg-[#050505] border border-stroke rounded-xl p-6 font-mono text-sm overflow-x-auto text-[#D1D5DB]">
+                        <code>
+<span class="text-[#84A59D]">from</span> NKit.tools <span class="text-[#84A59D]">import</span> Tool<br><br>
+<span class="text-[#84A59D]">def</span> <span class="text-[#F4A261]">sys_execute</span>(cmd: <span class="text-[#E07A5F]">str</span>) -&gt; <span class="text-[#E07A5F]">str</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-[#F2CC8F]">"""Runs verified OS commands on node."""</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-[#84A59D]">return</span> subprocess.check_output(cmd)<br><br>
+sandbox_tool = Tool(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;name=<span class="text-[#F2CC8F]">"sys_execute"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;callback=sys_execute<br>
+)<br>
+agent.add_tool(sandbox_tool)
+                        </code>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <style>
+        .animate-fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <script>
+        function switchTab(tabId) {
+            // Hide all panels
+            document.querySelectorAll('.doc-panel').forEach(p => p.classList.add('hidden'));
+            
+            // Remove active state from all tabs
+            document.querySelectorAll('.doc-tab-btn').forEach(t => {
+                t.classList.remove('active', 'text-text', 'bg-stroke/50', 'shadow-inner', 'border-stroke');
+                t.classList.add('text-muted', 'border-transparent', 'hover:text-text', 'hover:bg-stroke/20');
+            });
+
+            // Show selected panel
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+
+            // Set active state on clicked tab
+            let activeTab = document.getElementById('tab-' + tabId);
+            activeTab.classList.remove('text-muted', 'border-transparent', 'hover:text-text', 'hover:bg-stroke/20');
+            activeTab.classList.add('active', 'text-text', 'bg-stroke/50', 'shadow-inner', 'border-stroke');
+        }
+    </script>
+
+    <!-- Marquee Footer -->
+    <div class="w-full overflow-hidden border-t border-stroke py-6 bg-surface">
+        <div class="whitespace-nowrap flex text-sm tracking-[0.2em] text-muted" id="marquee">
+            <span>AUTONOMOUS EXECUTION IS POSSIBLE • AGENT-FIRST FRAMEWORKS • CODEACT SANDBOXES • AUTONOMOUS EXECUTION IS POSSIBLE • AGENT-FIRST FRAMEWORKS • CODEACT SANDBOXES • </span>
+            <span>AUTONOMOUS EXECUTION IS POSSIBLE • AGENT-FIRST FRAMEWORKS • CODEACT SANDBOXES • AUTONOMOUS EXECUTION IS POSSIBLE • AGENT-FIRST FRAMEWORKS • CODEACT SANDBOXES • </span>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Loading Screen Sequence ---
+        let count = 0;
+        const loader = document.getElementById('loader');
+        const countDisplay = document.getElementById('loader-count');
+        const progressDisplay = document.getElementById('loader-progress');
+        const loaderWord = document.getElementById('loader-word');
+        const words = ["Design", "Create", "Inspire", "Execute"];
+        let wordIdx = 0;
+
+        // Entrance animation
+        gsap.to('.loader-label', { opacity: 1, y: 0, duration: 1, ease: "power3.out" });
+        gsap.to(loaderWord, { opacity: 1, y: 0, duration: 0.5 });
+        
+        setInterval(() => {
+            if (wordIdx < words.length - 1) {
+                gsap.to(loaderWord, { opacity: 0, y: -20, duration: 0.3, onComplete: () => {
+                    wordIdx++;
+                    loaderWord.innerText = words[wordIdx];
+                    gsap.fromTo(loaderWord, { y: 20 }, { opacity: 1, y: 0, duration: 0.3 });
+                }});
+            }
+        }, 800);
+
+        const counterObj = { val: 0 };
+        gsap.to(counterObj, {
+            val: 100,
+            duration: 2.7,
+            ease: "circ.inOut",
+            onUpdate: function() {
+                const step = Math.round(counterObj.val);
+                countDisplay.innerText = String(step).padStart(3, "0");
+                gsap.set(progressDisplay, { scaleX: step / 100 });
+            },
+            onComplete: function() {
+                setTimeout(() => {
+                    gsap.to(loader, { yPercent: -100, duration: 1, ease: "power4.inOut" });
+                    triggerHero();
+                }, 400);
+            }
+        });
+
+        // --- 2. Hero GSAP Timeline ---
+        function triggerHero() {
+            gsap.fromTo('.hero-item', 
+                { opacity: 0, y: 50, filter: "blur(10px)" }, 
+                { opacity: 1, y: 0, filter: "blur(0px)", duration: 1.2, stagger: 0.1, ease: "power3.out", delay: 0.2 }
+            );
+        }
+
+        // --- 3. Rotating Roles ---
+        const roles = ["intelligence", "sandboxes", "workflows", "networks"];
+        let rIndex = 0;
+        const roleText = document.getElementById('role-text');
+        
+        setInterval(() => {
+            gsap.to(roleText, { opacity: 0, y: -10, duration: 0.4, ease: "back.in", onComplete: () => {
+                rIndex = (rIndex + 1) % roles.length;
+                roleText.innerText = roles[rIndex];
+                gsap.fromTo(roleText, { y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "back.out" });
+            }});
+        }, 3000);
+
+        // --- 4. Scroll Indicator Loop ---
+        gsap.to('#scroll-indicator', {
+            yPercent: 200,
+            duration: 1.5,
+            repeat: -1,
+            ease: "power2.inOut"
+        });
+
+        // --- 5. Marquee Loop ---
+        gsap.to('#marquee', {
+            xPercent: -50,
+            duration: 20,
+            repeat: -1,
+            ease: "none"
+        });
+
+        // --- 6. ScrollTrigger Fades for Content ---
+        gsap.registerPlugin(ScrollTrigger);
+        // We simulate basic scroll-trigger fade up without full library linking for safety:
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    gsap.fromTo(entry.target, 
+                        { opacity: 0, y: 40 }, 
+                        { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
+                    );
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        document.querySelectorAll('.hidden-section').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
