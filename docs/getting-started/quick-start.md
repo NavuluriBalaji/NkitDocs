@@ -1,162 +1,110 @@
 # Quick Start
 
-Get your first agent running in **5 minutes** ⚡
+Get your first NKit agent initialized and autonomously executing tasks in minutes.
 
-## 1. Install nkit
+## 1. Installation
 
-```bash
-pip install nkit openai
-```
-
-## 2. Set Your API Key
+Install the framework and its base dependencies:
 
 ```bash
-export OPENAI_API_KEY="sk-..."
+pip install nkit-agents
 ```
 
-Or set it in Python:
+If you plan on hooking up local models via LM Studio, ensure you have the required provider dependency:
+
+```bash
+pip install lmstudio
+```
+
+## 2. Connect an LLM Provider
+
+NKit operates through a unified dependency injection model. You first select your LLM hardware provider:
 
 ```python
 import os
-os.environ["OPENAI_API_KEY"] = "sk-..."
+from NKit.llms import GeminiLLM, LMStudioLLM
+
+# Option A: Cloud Provider (Google Gemini)
+os.environ["GEMINI_API_KEY"] = "your-api-key"
+google_backend = GeminiLLM(model="gemini-2.5-flash")
+
+# Option B: Local Provider (LM Studio)
+# Bypasses API keys and connects to your local inference server
+local_backend = LMStudioLLM(base_url="http://localhost:1234")
 ```
 
-## 3. Create Your First Agent
+## 3. Initialize the Core Engine
+
+The `Agent` orchestrates your selected configurations. You can run tasks synchronously using `.run()` or gracefully in async loops using `.run_async()`.
 
 ```python
-from nkit import Agent, Step
 import asyncio
+from NKit import Agent
 
-# Define agent behavior
-agent = Agent(
-    name="ResearchBot",
-    description="An agent that researches topics"
-)
+# Initialize the God Agent
+agent = Agent(llm=local_backend)
 
-# Create a step (unit of work)
-research_step = Step(
-    title="Research the topic",
-    description="Search for information about the given topic",
-)
-
-# Run the agent
 async def main():
-    result = await agent.aprocess([research_step], "What is machine learning?")
-    print(result)
-
-# Execute
-asyncio.run(main())
-```
-
-**Output:**
-```
-Agent ResearchBot processed your query...
-Machine learning is a subset of artificial intelligence...
-```
-
-## 4. Add Tools
-
-Give your agent the ability to use external services:
-
-```python
-from nkit import Agent, Step
-from nkit.tools import Tool
-import asyncio
-
-# Create a simple tool
-def calculate(operation: str, a: float, b: float) -> float:
-    """Perform basic math operations"""
-    if operation == "add":
-        return a + b
-    elif operation == "multiply":
-        return a * b
-    return 0
-
-# Register with agent
-agent = Agent(name="MathBot")
-agent.add_tool(Tool(
-    name="calculator",
-    description="Perform math operations",
-    callback=calculate
-))
-
-# Use it
-async def main():
-    result = await agent.aprocess(
-        [Step(title="Calculate", description="5 + 3")],
-        "Calculate 5 + 3"
-    )
-    print(result)
+    print("Initiating sequence...")
+    result = await agent.run_async("What is the current time and current working directory?")
+    print("Result:", result)
 
 asyncio.run(main())
 ```
 
-## 5. Create a Multi-Step Workflow
+*(Note: NKit comes pre-equipped with foundational utilities like `get_time`, `list_files`, and `web_search` natively, allowing your agent to dynamically accomplish basic tasks without any custom tool setup.)*
+
+## 4. Enabling Observability (Event Streaming)
+
+Agents can operate like a black box if configured poorly. To establish complete transparency, NKit includes the `LiveObserver` class. 
+
+By injecting an observer, you can pipe real-time streams of agent reasoning directly to your CLI, frontend server, or graphical IDE.
 
 ```python
-from nkit import Agent, Step
+from NKit import Agent, LiveObserver
+from NKit.llms import LMStudioLLM
 
-agent = Agent(name="WorkflowBot")
+observer = LiveObserver()
 
-steps = [
-    Step(title="Gather Data", description="Collect information"),
-    Step(title="Analyze", description="Analyze the data"),
-    Step(title="Report", description="Generate report")
-]
+# Subscribe to reasoning events
+@observer.on("agent.reasoning")
+def print_thoughts(event):
+    print(f"[REASONING STREAM]: {event.get('thought', '')}")
 
-# Sequential execution
-import asyncio
-result = asyncio.run(agent.aprocess(steps, "Analyze quarterly sales"))
-```
+# Subscribe to tool execution events
+@observer.on("tool.before")
+def print_action(event):
+    print(f"[EXECUTION STREAM]: Calling '{event['tool_name']}'")
 
-## 6. Next Steps
-
-✨ **Learn More:**
-- **[Your First Agent](first-agent.md)** - Detailed step-by-step guide
-- **[Tools Guide](../core-concepts/tools.md)** - How to create custom tools
-- **[Tasks & Workflows](../core-concepts/tasks.md)** - Build complex workflows
-- **[Examples](../examples/basic-agent.md)** - Ready-to-run examples
-
-## Common Patterns
-
-### Synchronous Execution
-
-```python
-# Use process() instead of aprocess()
-result = agent.process(steps, "Your task")
-```
-
-### With Memory
-
-```python
 agent = Agent(
-    name="Bot",
-    enable_memory=True  # Remembers conversation history
+    llm=LMStudioLLM(), 
+    observer=observer
+)
+
+agent.run("What files are currently around you?")
+```
+
+## 5. Security & Auditing
+
+For enterprise applications spanning multiple autonomous actions, it is heavily recommended to inject our safety and tracing parameters:
+
+```python
+from NKit.safety import SafetyGate
+from NKit.audit import WhyLog
+
+# The SafetyGate validates all tool permissions pre-execution
+safety_filter = SafetyGate()
+
+# WhyLog tracks un-tamperable audit logs of every iteration
+audit = WhyLog(path="./logs/agent_audit.jsonl")
+
+agent = Agent(
+    llm=local_backend,
+    safety_gate=safety_filter,
+    why_log=audit
 )
 ```
 
-### Custom Settings
+## Next Steps
 
-```python
-agent = Agent(
-    name="CustomBot",
-    model="gpt-4",  # Use GPT-4
-    temperature=0.7,  # More creative
-    max_iterations=10  # Limit reasoning steps
-)
-```
-
-## Troubleshooting
-
-**Agent not responding?**
-- Check your API key is set
-- Verify internet connection
-- See [Troubleshooting](../advanced/troubleshooting.md)
-
-**Want to learn more?**
-- See [Core Concepts](../core-concepts/index.md)
-- Check [API Reference](../api-reference/index.md)
-
----
-
-**Ready? Let's build something! → [Your First Agent](first-agent.md)**
+Now that your Agent framework is initialized, read out our architecture documents to learn how to inject the powerful CodeACT sandbox or deploy hierarchical, multi-agent frameworks.
